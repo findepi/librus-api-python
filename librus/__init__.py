@@ -1,12 +1,8 @@
+import datetime
+
 import requests_html
 
 URI_BASE = 'https://synergia.librus.pl'
-
-_ANNOUNCEMENT_DESCRIPTION_TO_KEY = {
-    "Dodał": 'author',
-    "Data publikacji": 'date',
-    "Treść": 'content',
-}
 
 
 class LibrusSession(object):
@@ -32,19 +28,34 @@ class LibrusSession(object):
         response = self._get('/ogloszenia')
 
         for element in response.html.find('table.decorated.big'):
-            announcement = {
-                'title': _only_element(element.find('thead')).full_text.strip(),
-            }
+            yield self._parse_announcement(element)
 
-            for data_row in element.find('tbody tr'):
-                description = _only_element(data_row.find('th')).full_text.strip()
-                text = _only_element(data_row.find('td')).full_text.strip()
-                key = _ANNOUNCEMENT_DESCRIPTION_TO_KEY[description]
-                if key in announcement:
-                    raise RuntimeError(f"{key} already set in {repr(announcement)}")
-                announcement[key] = text
+    @staticmethod
+    def _parse_announcement(element):
+        title = _only_element(element.find('thead')).full_text.strip()
+        content = author = date = None
+        for data_row in element.find('tbody tr'):
+            description = _only_element(data_row.find('th')).full_text.strip()
+            text = _only_element(data_row.find('td')).full_text.strip()
 
-            yield announcement
+            if description == "Dodał":
+                assert author is None, "author already set"
+                author = text
+
+            elif description == "Treść":
+                assert content is None, "content already set"
+                content = text
+
+            elif description == "Data publikacji":
+                assert date is None, "date already set"
+                date = datetime.datetime.strptime(text, '%Y-%m-%d')
+                current_year = datetime.datetime.now().year
+                assert current_year - 2 <= date.year <= current_year  # Sanity check
+
+            else:
+                raise RuntimeError(f"{repr(description)} is unrecognized")
+
+        return Announcement(title, content, author, date)
 
     @staticmethod
     def _login_successful(response):
@@ -60,6 +71,14 @@ class LibrusSession(object):
     def _post(self, path, **kwargs):
         assert path[0] == '/'
         return self._html_session.post(url=self._uri_base + path, **kwargs)
+
+
+class Announcement(object):
+    def __init__(self, title, content, author, date):
+        self.title = title
+        self.content = content
+        self.author = author
+        self.date = date
 
 
 def _only_element(values):

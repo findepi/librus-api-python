@@ -29,7 +29,9 @@ class LibrusSession(object):
 
         redirect_location = response.history[-1].headers['Location']
         expected_redirects = {
-            '/uczen_index',  # The Location should be full URI, but it just happens to be a relative path.
+            # The Location should be full URIs, but they just happen to be relative paths.
+            '/uczen_index',
+            '/uczen/index',
         }
         if redirect_location not in expected_redirects:
             return False, "unrecognized redirect after filling login form: " + repr(redirect_location)

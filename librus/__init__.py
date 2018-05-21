@@ -18,8 +18,23 @@ class LibrusSession(object):
         self._get('/loguj')  # Grab the cookie testing cookie support
         response = self._post('/loguj', data=dict(login=username, passwd=password, ed_pass_keydown='', ed_pass_keyup='', captcha='', czy_js=1))
 
-        if not self._login_successful(response):
-            raise RuntimeError("Login failed")
+        success, reason = self._check_login_success(response)
+        if not success:
+            raise RuntimeError("Login failed: " + reason)
+
+    @staticmethod
+    def _check_login_success(response):
+        if not response.history:
+            return False, "no redirect occurred after filling login form"
+
+        redirect_location = response.history[-1].headers['Location']
+        expected_redirects = {
+            '/uczen_index',  # The Location should be full URI, but it just happens to be a relative path.
+        }
+        if redirect_location not in expected_redirects:
+            return False, "unrecognized redirect after filling login form: " + repr(redirect_location)
+
+        return True, None
 
     def list_announcements(self):
         """
@@ -56,13 +71,6 @@ class LibrusSession(object):
                 raise RuntimeError(f"{repr(description)} is unrecognized")
 
         return Announcement(title, content, author, date)
-
-    @staticmethod
-    def _login_successful(response):
-        return response.history and \
-               response.history[-1].headers['Location'] in {
-                   '/uczen_index',  # The Location should be full URI, but it just happens to be a relative path.
-               }
 
     def _get(self, path, **kwargs):
         assert path[0] == '/'

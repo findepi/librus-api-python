@@ -1,48 +1,32 @@
 import datetime
-
 import requests_html
-
-URI_BASE = 'https://synergia.librus.pl'
+from urllib.parse import urljoin
 
 
 class LibrusSession(object):
 
-    def __init__(self, *, uri_base=URI_BASE):
-        self._uri_base = uri_base
-        self._html_session = requests_html.HTMLSession()
+    def __init__(self):
+        self._html_session = None
 
     def login(self, username, password):
         """
-        Authenticates session.
+        Creates authenticated session.
         """
-        self._get('/loguj')  # Grab the cookie testing cookie support
-        response = self._post('/loguj', data=dict(login=username, passwd=password, ed_pass_keydown='', ed_pass_keyup='', captcha='', czy_js=1))
 
-        success, reason = self._check_login_success(response)
-        if not success:
-            raise RuntimeError("Login failed: " + reason)
-
-    @staticmethod
-    def _check_login_success(response):
-        if not response.history:
-            return False, "no redirect occurred after filling login form"
-
-        redirect_location = response.history[-1].headers['Location']
-        expected_redirects = {
-            # The Location should be full URIs, but they just happen to be relative paths.
-            '/uczen_index',
-            '/uczen/index',
-        }
-        if redirect_location not in expected_redirects:
-            return False, "unrecognized redirect after filling login form: " + repr(redirect_location)
-
-        return True, None
+        self._html_session = requests_html.HTMLSession()
+        self._html_session.get(url='https://api.librus.pl/OAuth/Authorization?client_id=46&response_type=code&scope=mydata')
+        response = self._html_session.post(url='https://api.librus.pl/OAuth/Authorization?client_id=46',
+                                           data={'action': 'login', 'login': username, 'pass': password})
+        if not response.json().get('status') == 'ok' or not response.json().get('goTo'):
+            raise RuntimeError("Login failed")
+        self._html_session.get(url=urljoin(response.url, response.json()['goTo']))
+        # TODO somehow validate the login was truly successful
 
     def list_announcements(self):
         """
         Gets announcements (AKA 'ogłoszenia')
         """
-        response = self._get('/ogloszenia')
+        response = self._html_session.get(url='https://synergia.librus.pl/ogloszenia')
 
         for element in response.html.find('table.decorated.big'):
             yield self._parse_announcement(element)
@@ -73,14 +57,6 @@ class LibrusSession(object):
                 raise RuntimeError(f"{repr(description)} is unrecognized")
 
         return Announcement(title, content, author, date)
-
-    def _get(self, path, **kwargs):
-        assert path[0] == '/'
-        return self._html_session.get(url=self._uri_base + path, **kwargs)
-
-    def _post(self, path, **kwargs):
-        assert path[0] == '/'
-        return self._html_session.post(url=self._uri_base + path, **kwargs)
 
 
 class Announcement(object):

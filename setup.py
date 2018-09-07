@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 setup(
     name='librus',
     description="Librus Synergia API",
-    version='0.0.6',
+    version='0.0.7',
     packages=find_packages(),
     setup_requires=[
         # 'pytest-runner==3.0',

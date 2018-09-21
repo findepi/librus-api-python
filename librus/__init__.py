@@ -115,6 +115,40 @@ class LibrusSession(object):
 
         return Announcement(title, content, author, date)
 
+    def list_grades(self):
+        response = self._html_session.get(url='https://synergia.librus.pl/przegladaj_oceny/uczen')
+        grades = []
+        for grade_row in response.html.find('table.decorated.stretch')[1].find('tr.detail-grades'):
+            grade_data = grade_row.find('td')
+            grade = grade_data[0].text  # ocena
+            comment = grade_data[1].text  # komentarz
+            title = grade_data[2].text  # tytuł oceny
+            added_date = grade_data[3].text  # data wstawienia
+            teacher = grade_data[4].text  # nauczyciel
+            correction_grade = grade_data[5].text  # poprawa oceny
+            added_by = grade_data[6].text  # dodał
+            grades.append(Grade(grade, comment, title, added_date, teacher, correction_grade, added_by))
+        return grades
+
+    def list_subject_semester_info(self):
+        response = self._html_session.get(url='https://synergia.librus.pl/przegladaj_oceny/uczen')
+        subjects = []
+        for subject in response.html.find('.line0') + response.html.find('.line1'):
+            if len(subject.find('td')) == 10 and subject.find('td')[1].text != 'Ocena' and subject.find('td')[1].text != '1':
+                subject_name = subject.find('td')[1].text
+                grades_first_semester = subject.find('td')[2].text
+                grade_first_semester_prediction = subject.find('td')[3].text
+                grade_first_semester = subject.find('td')[4].text
+                grades_second_semester = subject.find('td')[5].text
+                grade_second_semester_prediction = subject.find('td')[6].text
+                grade_second_semester = subject.find('td')[7].text
+                grade_final_prediction = subject.find('td')[8].text
+                grade_final = subject.find('td')[9].text
+                subjects.append(SubjectSemesterInfo(subject_name, grades_first_semester, grade_first_semester_prediction, grade_first_semester,
+                                                    grades_second_semester, grade_second_semester_prediction, grade_second_semester,
+                                                    grade_final_prediction, grade_final))
+        return subjects
+
 
 class Announcement(object):
     def __init__(self, title, content, author, date):
@@ -136,6 +170,31 @@ class Exam(object):
         self.specification = specification
         self.publish_date = publish_date
         self.interval = interval
+
+
+class Grade(object):
+    def __init__(self, grade, comment, title, added_date, teacher, correction_grade, added_by):
+        self.grade = grade
+        self.comment = comment
+        self.title = title
+        self.added_date = added_date
+        self.teacher = teacher
+        self.correction_grade = correction_grade
+        self.added_by = added_by
+
+
+class SubjectSemesterInfo(object):
+    def __init__(self, subject_name, grades_first_semester, grade_first_semester_prediction, grade_first_semester, grades_second_semester,
+                 grade_second_semester_prediction, grade_second_semester, grade_final_prediction, grade_final):
+        self.subject_name = subject_name
+        self.grades_first_semester = grades_first_semester
+        self.grade_first_semester_prediction = grade_first_semester_prediction
+        self.grade_first_semester = grade_first_semester
+        self.grades_second_semester = grades_second_semester
+        self.grade_second_semester_prediction = grade_second_semester_prediction
+        self.grade_second_semester = grade_second_semester
+        self.grade_final_prediction = grade_final_prediction
+        self.grade_final = grade_final
 
 
 def _only_element(values):

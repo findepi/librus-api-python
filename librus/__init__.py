@@ -58,6 +58,27 @@ class LibrusSession(object):
 
         return Announcement(title, content, author, date)
 
+    def getSchedule(self,day):
+        response = self._html_session.get(url='https://synergia.librus.pl/przegladaj_plan_lekcji')
+        lessonArray = []
+        for subjectLine in response.html.find('tr.line1'):
+            subjectIndex = subjectLine.find('td')[0].text
+            subjectTime = subjectLine.find('th')[0].text
+            try:
+                subjectName = subjectLine.find('td')[1+day].find('div.text')[0].text
+                subjectData = subjectName.split('-')
+                subjectTeacher = subjectData[1]
+                subjectName = subjectData[0]
+                subjectRoom = None
+                if 's.' in subjectTeacher:
+                    subjectData = subjectTeacher.split('s.')
+                    subjectTeacher = subjectData[0]
+                    subjectRoom = subjectData[1]
+                lessonArray.append(lessonUnit(subjectIndex,subjectName,subjectTime,subjectTeacher,subjectRoom))
+            except:
+                pass
+        return lessonArray
+
     def getDetailGrades(self):
         response = self._html_session.get(url='https://synergia.librus.pl/przegladaj_oceny/uczen')
         grades = []
@@ -94,6 +115,13 @@ class LibrusSession(object):
                 gradeFinal = subject.find('td')[9].text
                 subjectArray.append(subjectInfov1(subjectName, gradesFirstSemester, gradeFirstSemesterPrediction, gradeFirstSemester,gradesSecondSemester,gradeSecondSemesterPrediction,gradeSecondSemester,gradeFinalPrediction,gradeFinal))
         return subjectArray
+class lessonUnit(object):
+    def __init__(self,subjectIndex,subjectName,subjectTime,subjectTeacher,subjectRoom):
+        self.index = subjectIndex
+        self.name = subjectName
+        self.time = subjectTime
+        self.teacher = subjectTeacher
+        self.room = subjectRoom
 class subjectInfov1(object):
     def __init__(self, subjectName, gradesFirstSemester, gradeFirstSemesterPrediction, gradeFirstSemester,gradesSecondSemester,gradeSecondSemesterPrediction,gradeSecondSemester,gradeFinalPrediction,gradeFinal):
         self.subjectName = subjectName

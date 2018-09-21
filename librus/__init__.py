@@ -83,20 +83,21 @@ class LibrusSession(object):
         response = self._html_session.get(url='https://synergia.librus.pl/przegladaj_oceny/uczen')
         grades = []
         for grade in response.html.find('table.decorated.stretch')[1].find('tr.detail-grades'):
+            gradeData = grade.find('td')
             #ocena
-            gradeB = grade.find('td')[0].text
+            gradeB = gradeData[0].text
             #komentarz
-            comment = grade.find('td')[1].text
+            comment = gradeData[1].text
             #tytuł oceny
-            title = grade.find('td')[2].text
+            title = gradeData[2].text
             #data wstawienia
-            addedDate = grade.find('td')[3].text
+            addedDate = gradeData[3].text
             #nauczyciel
-            teacher = grade.find('td')[4].text
+            teacher = gradeData[4].text
             #poprawa oceny
-            correctionGrade = grade.find('td')[5].text
+            correctionGrade = gradeData[5].text
             #dodał
-            addedBy = grade.find('td')[6].text
+            addedBy = gradeData[6].text
             grades.append(detailGrade(gradeB,comment,title,addedDate,teacher,correctionGrade,addedBy))
         return grades
     def getSubjectInfov1(self):

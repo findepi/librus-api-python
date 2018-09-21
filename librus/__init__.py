@@ -149,6 +149,27 @@ class LibrusSession(object):
                                                     grade_final_prediction, grade_final))
         return subjects
 
+    def schedule(self,day):
+        response = self._html_session.get(url='https://synergia.librus.pl/przegladaj_plan_lekcji')
+        lessons = []
+        for subject_line in response.html.find('tr.line1'):
+            subject_index = subject_line.find('td')[0].text
+            subject_time = subject_line.find('th')[0].text
+            try:
+                subject_name = subject_line.find('td')[1+day].find('div.text')[0].text
+                subject_data = subject_name.split('-')
+                teacher = subject_data[1]
+                subject_name = subject_data[0]
+                classroom = None
+                if 's.' in teacher:
+                    subject_data = teacher.split('s.')
+                    teacher = subject_data[0]
+                    classroom = subject_data[1]
+                lessons.append(Lesson(subject_index, subject_name, subject_time, teacher, classroom))
+            except:
+                raise
+        return lessons
+
 
 class Announcement(object):
     def __init__(self, title, content, author, date):
@@ -195,6 +216,16 @@ class SubjectSemesterInfo(object):
         self.grade_second_semester = grade_second_semester
         self.grade_final_prediction = grade_final_prediction
         self.grade_final = grade_final
+
+
+class Lesson(object):
+    def __init__(self,index, subject, time, teacher, classroom):
+        self.index = index
+        self.name = subject
+        self.time = time
+        self.teacher = teacher
+        self.classroom = classroom
+
 
 
 def _only_element(values):

@@ -14,28 +14,83 @@ class LibrusSession(object):
         """
 
         self._html_session = requests_html.HTMLSession()
-        self._html_session.get(url='https://api.librus.pl/OAuth/Authorization?client_id=46&response_type=code&scope=mydata')
+        self._html_session.get(
+            url='https://api.librus.pl/OAuth/Authorization?client_id=46&response_type=code&scope=mydata')
         response = self._html_session.post(url='https://api.librus.pl/OAuth/Authorization?client_id=46',
                                            data={'action': 'login', 'login': username, 'pass': password})
         if not response.json().get('status') == 'ok' or not response.json().get('goTo'):
             raise RuntimeError("Login failed")
-        self._html_session.get(url=urljoin(response.url, response.json()['goTo']))
+        self._html_session.get(url=urljoin(
+            response.url, response.json()['goTo']))
         # TODO somehow validate the login was truly successful
 
     def list_announcements(self):
         """
         Gets announcements (AKA 'ogłoszenia')
         """
-        response = self._html_session.get(url='https://synergia.librus.pl/ogloszenia')
+        response = self._html_session.get(
+            url='https://synergia.librus.pl/ogloszenia')
 
         for element in response.html.find('table.decorated.big'):
             yield self._parse_announcement(element)
+
+    def list_exams(self):
+        """
+        Gets Exams from Calendar
+        """
+        response = self._html_session.get(
+            url="https://synergia.librus.pl/terminarz")
+        for element in response.html.search_all("szczegoly/{}'"):
+            yield self._parse_exam(self._html_session.get(url=f"https://synergia.librus.pl/terminarz/szczegoly/{element[0]}").html.find('table.decorated.small'))
+
+    @staticmethod
+    def _parse_exam(element):
+        date = lesson = teacher = category = subject = classroom = specification = publish_date = None
+        for data_row in element[0].find("tbody tr"):
+            description = _only_element(data_row.find('th')).full_text.strip()
+            text = _only_element(data_row.find('td')).full_text.strip()
+            if description == "Data":
+                assert date is None, "date already set"
+                date = text
+
+            elif description == "Nr lekcji":
+                assert lesson is None, "lesson already set"
+                lesson = text
+
+            elif description == "Nauczyciel":
+                assert teacher is None, "teacher already set"
+                teacher = text
+
+            elif description == "Rodzaj":
+                assert category is None, "category already set"
+                category = text
+
+            elif description == "Przedmiot":
+                assert subject is None, "subject already set"
+                subject = text
+
+            elif description == "Sala":
+                assert classroom is None, "classroom already set"
+                classroom = text
+
+            elif description == "Opis":
+                assert specification is None, "specification already set"
+                specification = text
+
+            elif description == "Data dodania":
+                assert publish_date is None, "publish date already set"
+                publish_date = text
+            else:
+                raise RuntimeError(f"{repr(description)} is unrecognized")
+        return Exam(date, lesson, teacher, category, subject,
+                    classroom, specification, publish_date)
 
     @staticmethod
     def _parse_announcement(element):
         title = _only_element(element.find('thead')).full_text.strip()
         content = author = date = None
         for data_row in element.find('tbody tr'):
+            print(data_row)
             description = _only_element(data_row.find('th')).full_text.strip()
             text = _only_element(data_row.find('td')).full_text.strip()
 
@@ -65,6 +120,19 @@ class Announcement(object):
         self.content = content
         self.author = author
         self.date = date
+
+
+class Exam(object):
+    def __init__(self, date, lesson, teacher, category, subject,
+                 classroom, specification, publish_date):
+        self.date = date
+        self.lesson = lesson
+        self.teacher = teacher
+        self.category = category
+        self.subject = subject
+        self.classroom = classroom
+        self.specification = specification
+        self.publish_date = publish_date
 
 
 def _only_element(values):

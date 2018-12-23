@@ -31,6 +31,62 @@ class LibrusSession(object):
         for element in response.html.find('table.decorated.big'):
             yield self._parse_announcement(element)
 
+    def list_exams(self):
+        """
+        Gets Exams from Calendar
+        """
+        response = self._html_session.get(url="https://synergia.librus.pl/terminarz")
+        for element in response.html.search_all("szczegoly/{}'"):
+            details = self._html_session.get(url=f"https://synergia.librus.pl/terminarz/szczegoly/{element[0]}")
+            yield self._parse_exam(details.html.find('table.decorated.small'))
+
+    @staticmethod
+    def _parse_exam(element):
+        date = lesson = teacher = category = subject = classroom = specification = publish_date = interval = None
+        for data_row in element[0].find("tbody tr"):
+            description = _only_element(data_row.find('th')).full_text.strip()
+            text = _only_element(data_row.find('td')).full_text.strip()
+            if description == "Data":
+                assert date is None, "date already set"
+                date = text
+
+            elif description == "Nr lekcji":
+                assert lesson is None, "lesson already set"
+                lesson = text
+
+            elif description == "Nauczyciel":
+                assert teacher is None, "teacher already set"
+                teacher = text
+
+            elif description == "Rodzaj":
+                assert category is None, "category already set"
+                category = text
+
+            elif description == "Przedmiot":
+                assert subject is None, "subject already set"
+                subject = text
+
+            elif description == "Sala":
+                assert classroom is None, "classroom already set"
+                classroom = text
+
+            elif description == "Opis":
+                assert specification is None, "specification already set"
+                specification = text
+
+            elif description == "Data dodania":
+                assert publish_date is None, "publish date already set"
+                publish_date = text
+
+            elif description == "Przedział czasu":
+                assert interval is None, "interval already set"
+                interval = text
+            else:
+                print(f"{repr(description)} is unrecognized")
+
+        return Exam(date, lesson, teacher, category, subject,
+                    classroom, specification, publish_date, interval)
+
     @staticmethod
     def _parse_announcement(element):
         title = _only_element(element.find('thead')).full_text.strip()
@@ -65,6 +121,20 @@ class Announcement(object):
         self.content = content
         self.author = author
         self.date = date
+
+
+class Exam(object):
+    def __init__(self, date, lesson, teacher, category, subject,
+                 classroom, specification, publish_date, interval):
+        self.date = date
+        self.lesson = lesson
+        self.teacher = teacher
+        self.category = category
+        self.subject = subject
+        self.classroom = classroom
+        self.specification = specification
+        self.publish_date = publish_date
+        self.interval = interval
 
 
 def _only_element(values):

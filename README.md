@@ -12,4 +12,4 @@ for announcement in session.list_announcements():
 
 ## API completeness
 
-1%. Currently only announcements are covered. PRs welcomed. 
+2%. Currently only announcements and exams are covered. PRs welcomed.

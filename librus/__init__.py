@@ -81,10 +81,15 @@ class LibrusSession(object):
             elif description == "Data dodania":
                 assert publish_date is None, "publish date already set"
                 publish_date = text
+            
+            elif description == "Przedział czasu":
+                assert interval is None, "interval already set"
+                interval = text
             else:
-                raise RuntimeError(f"{repr(description)} is unrecognized")
+                print(f"{repr(description)} is unrecognized")
+                
         return Exam(date, lesson, teacher, category, subject,
-                    classroom, specification, publish_date)
+                    classroom, specification, publish_date, interval)
 
     @staticmethod
     def _parse_announcement(element):

@@ -46,7 +46,7 @@ class LibrusSession(object):
 
     @staticmethod
     def _parse_exam(element):
-        date = lesson = teacher = category = subject = classroom = specification = publish_date = None
+        date = lesson = teacher = category = subject = classroom = specification = publish_date = interval = None
         for data_row in element[0].find("tbody tr"):
             description = _only_element(data_row.find('th')).full_text.strip()
             text = _only_element(data_row.find('td')).full_text.strip()
@@ -87,7 +87,7 @@ class LibrusSession(object):
                 interval = text
             else:
                 print(f"{repr(description)} is unrecognized")
-                
+
         return Exam(date, lesson, teacher, category, subject,
                     classroom, specification, publish_date, interval)
 
@@ -129,7 +129,7 @@ class Announcement(object):
 
 class Exam(object):
     def __init__(self, date, lesson, teacher, category, subject,
-                 classroom, specification, publish_date):
+                 classroom, specification, publish_date, interval):
         self.date = date
         self.lesson = lesson
         self.teacher = teacher
@@ -138,7 +138,7 @@ class Exam(object):
         self.classroom = classroom
         self.specification = specification
         self.publish_date = publish_date
-
+        self.interval = interval
 
 def _only_element(values):
     value, = values

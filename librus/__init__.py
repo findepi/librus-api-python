@@ -41,7 +41,8 @@ class LibrusSession(object):
         response = self._html_session.get(
             url="https://synergia.librus.pl/terminarz")
         for element in response.html.search_all("szczegoly/{}'"):
-            yield self._parse_exam(self._html_session.get(url=f"https://synergia.librus.pl/terminarz/szczegoly/{element[0]}").html.find('table.decorated.small'))
+            yield self._parse_exam(self._html_session.get \
+            (url=f"https://synergia.librus.pl/terminarz/szczegoly/{element[0]}").html.find('table.decorated.small'))
 
     @staticmethod
     def _parse_exam(element):
@@ -90,7 +91,6 @@ class LibrusSession(object):
         title = _only_element(element.find('thead')).full_text.strip()
         content = author = date = None
         for data_row in element.find('tbody tr'):
-            print(data_row)
             description = _only_element(data_row.find('th')).full_text.strip()
             text = _only_element(data_row.find('td')).full_text.strip()
 

@@ -46,7 +46,7 @@ class LibrusSession(object):
         date = lesson = teacher = category = subject = classroom = specification = publish_date = interval = None
         for data_row in element[0].find("tbody tr"):
             description = _only_element(data_row.find('th')).full_text.strip()
-            text = _only_element(data_row.find('td')).full_text.strip()
+            text = _sanitize_text(_only_element(data_row.find('td')).full_text.strip())
             if description == "Data":
                 assert date is None, "date already set"
                 date = text
@@ -141,3 +141,7 @@ class Exam(object):
 def _only_element(values):
     value, = values
     return value
+
+
+def _sanitize_text(text):
+    return text.replace('\N{NO-BREAK SPACE}', '')

@@ -118,7 +118,7 @@ class LibrusSession(object):
     def list_grades(self):
         response = self._html_session.get(url='https://synergia.librus.pl/przegladaj_oceny/uczen')
         grades = []
-        for row in grade_session.html.find('table.decorated')[1].find('[class*="line"]'):
+        for row in response.html.find('table.decorated')[1].find('[class*="line"]'):
             #conditions to find only the needed rows
             if len(row.attrs["class"])==1 and "name" not in row.attrs and len(vals)>=10:
                 vals = row.find("td")
@@ -130,7 +130,7 @@ class LibrusSession(object):
                     teacher = values[2].split(": ")[1] #LOOKS LIKE "Nauczyciel: xyz"
                     addedBy = values[3].split(": ")[1].replace("<br/>","") #LOOKS LIKE "Dodal: xyz<br/>"
                     grade = grade.text
-                    grades.append(Grade(lesson_name, grade, date, teacher, addedBy))
+                    grades.append(Grade(lesson_name, grade,category, date, teacher, addedBy))
         return grades
 
     def list_subject_semester_info(self):
@@ -199,9 +199,10 @@ class Exam(object):
 
 
 class Grade(object):
-    def __init__(self, lesson_name, grade, date, teacher, added_by):
-        self.lesson_name = less
+    def __init__(self, lesson_name, grade,category, date, teacher, added_by):
+        self.lesson_name = lesson_name
         self.grade = grade
+        self.category = category
         self.date = date
         self.teacher = teacher
         self.added_by = added_by

@@ -118,16 +118,19 @@ class LibrusSession(object):
     def list_grades(self):
         response = self._html_session.get(url='https://synergia.librus.pl/przegladaj_oceny/uczen')
         grades = []
-        for grade_row in response.html.find('table.decorated.stretch')[1].find('tr.detail-grades'):
-            grade_data = grade_row.find('td')
-            grade = grade_data[0].text  # ocena
-            comment = grade_data[1].text  # komentarz
-            title = grade_data[2].text  # tytuł oceny
-            added_date = grade_data[3].text  # data wstawienia
-            teacher = grade_data[4].text  # nauczyciel
-            correction_grade = grade_data[5].text  # poprawa oceny
-            added_by = grade_data[6].text  # dodał
-            grades.append(Grade(grade, comment, title, added_date, teacher, correction_grade, added_by))
+        for row in grade_session.html.find('table.decorated')[1].find('[class*="line"]'):
+            #conditions to find only the needed rows
+            if len(row.attrs["class"])==1 and "name" not in row.attrs and len(vals)>=10:
+                vals = row.find("td")
+                lesson_name = vals[1].text
+                for grade in vals[2].find('a.ocena'):
+                    values = grade.attrs["title"].split("<br>")
+                    category = values[0].split(": ")[1] #IT LOOKS LIKE "Kategoria: xyz"
+                    date = values[1].split(": ")[1].split(" (")[0] #LOOKS LIKE "Data: yyy-mm-dd (day.)"
+                    teacher = values[2].split(": ")[1] #LOOKS LIKE "Nauczyciel: xyz"
+                    addedBy = values[3].split(": ")[1].replace("<br/>","") #LOOKS LIKE "Dodal: xyz<br/>"
+                    grade = grade.text
+                    grades.append(Grade(lesson_name, grade, date, teacher, addedBy))
         return grades
 
     def list_subject_semester_info(self):
@@ -196,13 +199,11 @@ class Exam(object):
 
 
 class Grade(object):
-    def __init__(self, grade, comment, title, added_date, teacher, correction_grade, added_by):
+    def __init__(self, lesson_name, grade, date, teacher, added_by):
+        self.lesson_name = less
         self.grade = grade
-        self.comment = comment
-        self.title = title
-        self.added_date = added_date
+        self.date = date
         self.teacher = teacher
-        self.correction_grade = correction_grade
         self.added_by = added_by
 
 

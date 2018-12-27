@@ -149,25 +149,27 @@ class LibrusSession(object):
                                                     grade_final_prediction, grade_final))
         return subjects
 
-    def schedule(self,day):
+    def schedule(self):
         response = self._html_session.get(url='https://synergia.librus.pl/przegladaj_plan_lekcji')
         lessons = []
         for subject_line in response.html.find('tr.line1'):
-            subject_index = subject_line.find('td')[0].text
-            subject_time = subject_line.find('th')[0].text
-            try:
-                subject_name = subject_line.find('td')[1+day].find('div.text')[0].text
-                subject_data = subject_name.split('-')
+            index = subject_line.find('td')[0].text
+            time = _sanitize_text(subject_line.find('th')[0].text)
+            for day, cell in enumerate(subject_line.find('td')[1:]):
+                if not cell.find('div.text'):
+                    continue
+                subject_data = _only_element(cell.find('div.text')).text.split('-')
+                subject_name = _sanitize_text(subject_data[0])
                 teacher = subject_data[1]
-                subject_name = subject_data[0]
                 classroom = None
                 if 's.' in teacher:
                     subject_data = teacher.split('s.')
-                    teacher = subject_data[0]
-                    classroom = subject_data[1]
-                lessons.append(Lesson(subject_index, subject_name, subject_time, teacher, classroom))
-            except:
-                raise
+                    teacher = _sanitize_text(subject_data[0])
+                    classroom = _sanitize_text(subject_data[1])
+                else:
+                    teacher = _sanitize_text(teacher)
+                lessons.append(Lesson(day, index, subject_name, time, teacher, classroom))
+        lessons.sort(key=(lambda lesson: (lesson.day, lesson.index)))
         return lessons
 
 
@@ -219,13 +221,13 @@ class SubjectSemesterInfo(object):
 
 
 class Lesson(object):
-    def __init__(self,index, subject, time, teacher, classroom):
+    def __init__(self, day, index, subject, time, teacher, classroom):
+        self.day = day
         self.index = index
         self.name = subject
         self.time = time
         self.teacher = teacher
         self.classroom = classroom
-
 
 
 def _only_element(values):
@@ -234,4 +236,8 @@ def _only_element(values):
 
 
 def _sanitize_text(text):
-    return text.replace('\N{NO-BREAK SPACE}', '')
+    text = text.replace('\N{NO-BREAK SPACE}', ' ')
+    text = text.replace('&nbsp;', ' ')
+    text = text.replace('&nbsp', ' ')
+    text = text.strip()
+    return text

@@ -36,6 +36,7 @@ class LibrusSession(object):
         Gets Exams from Calendar
         """
         response = self._html_session.get(url="https://synergia.librus.pl/terminarz")
+        # TODO we should be iterating explicitly over links to calendar items' details; doing unstructured "grepping" for now
         for element in response.html.search_all("szczegoly/{}'"):
             details = self._html_session.get(url=f"https://synergia.librus.pl/terminarz/szczegoly/{element[0]}")
             yield self._parse_exam(details.html.find('table.decorated.small'))

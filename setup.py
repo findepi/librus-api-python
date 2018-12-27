@@ -5,6 +5,7 @@ from setuptools import setup, find_packages
 setup(
     name='librus',
     description="Librus Synergia API",
+    url="https://github.com/findepi/librus-api-python",
     version='0.0.8',
     packages=find_packages(),
     setup_requires=[
@@ -17,4 +18,9 @@ setup(
         # 'pytest==3.3.1',
     ],
     zip_safe=True,  # just to silence setuptools
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.7",
+        "License :: OSI Approved :: Apache Software License",
+    ],
 )

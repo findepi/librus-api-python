@@ -6,7 +6,7 @@ setup(
     name='librus',
     description="Librus Synergia API",
     url="https://github.com/findepi/librus-api-python",
-    version='0.0.8',
+    version='0.0.9',
     packages=find_packages(),
     setup_requires=[
         # 'pytest-runner==3.0',

@@ -172,6 +172,28 @@ class LibrusSession(object):
         lessons.sort(key=(lambda lesson: (lesson.day, lesson.index)))
         return lessons
 
+    def list_messages(self, get_content=False):
+        """
+        Gets messages (AKA 'wiadomości')
+        """
+        response = self._html_session.get(url='https://synergia.librus.pl/wiadomosci')
+
+        for row in response.html.find('.line0') + response.html.find('.line1'):
+            cells = row.find('td')
+            message = Message(
+                sender=cells[2].text,
+                subject=cells[3].text,
+                sent_at=datetime.datetime.strptime(cells[4].text, '%Y-%m-%d %H:%M:%S')
+            )
+            if get_content:
+                href = cells[3].find('a')[0].attrs['href']
+                url = 'https://synergia.librus.pl' + href
+                content = self._html_session.get(url=url).html.find('.container-message-content')[0]
+                message.set_content(content.text)
+
+            yield message
+
+
 
 class Announcement(object):
     def __init__(self, title, content, author, date):
@@ -228,6 +250,17 @@ class Lesson(object):
         self.time = time
         self.teacher = teacher
         self.classroom = classroom
+
+
+class Message(object):
+    def __init__(self, sender, subject, sent_at):
+        self.sender = sender
+        self.subject = subject
+        self.sent_at = sent_at
+        self.content = None
+
+    def set_content(self, content):
+        self.content = content
 
 
 def _only_element(values):

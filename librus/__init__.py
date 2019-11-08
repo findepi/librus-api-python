@@ -178,7 +178,7 @@ class LibrusSession(object):
         """
         response = self._html_session.get(url='https://synergia.librus.pl/wiadomosci')
 
-        for row in response.html.find('.line0') + response.html.find('.line1'):
+        for row in response.html.find('.stretch > tbody > tr'):
             cells = row.find('td')
             message = Message(
                 sender=cells[2].text,
@@ -189,7 +189,7 @@ class LibrusSession(object):
                 href = cells[3].find('a')[0].attrs['href']
                 url = 'https://synergia.librus.pl' + href
                 content = self._html_session.get(url=url).html.find('.container-message-content')[0]
-                message.set_content(content.text)
+                message.content = content.text
 
             yield message
 
@@ -258,9 +258,6 @@ class Message(object):
         self.subject = subject
         self.sent_at = sent_at
         self.content = None
-
-    def set_content(self, content):
-        self.content = content
 
 
 def _only_element(values):

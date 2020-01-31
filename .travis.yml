@@ -8,3 +8,4 @@ script: |
   session = LibrusSession()
   session.login(os.environ['LIBRUS_USERNAME'], os.environ['LIBRUS_PASSWORD'])
   EOF
+  #

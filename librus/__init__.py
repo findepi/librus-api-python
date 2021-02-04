@@ -180,19 +180,20 @@ class LibrusSession(object):
 
         for row in response.html.find('.stretch > tbody > tr'):
             cells = row.find('td')
+            href = cells[3].find('a')[0].attrs['href']
             message = Message(
+                message_id=href.strip()[-9:-3],
                 sender=cells[2].text,
                 subject=cells[3].text,
-                sent_at=datetime.datetime.strptime(cells[4].text, '%Y-%m-%d %H:%M:%S')
+                sent_at=datetime.datetime.strptime(cells[4].text, '%Y-%m-%d %H:%M:%S'),
+                is_read=('font-weight: bold' in cells[3].attrs.get('style', ''))
             )
             if get_content:
-                href = cells[3].find('a')[0].attrs['href']
                 url = 'https://synergia.librus.pl' + href
                 content = self._html_session.get(url=url).html.find('.container-message-content')[0]
                 message.content = content.text
 
             yield message
-
 
 
 class Announcement(object):
@@ -253,11 +254,16 @@ class Lesson(object):
 
 
 class Message(object):
-    def __init__(self, sender, subject, sent_at):
+    def __init__(self, message_id, sender, subject, sent_at, is_read):
+        self.message_id = message_id
         self.sender = sender
         self.subject = subject
         self.sent_at = sent_at
+        self.is_read = is_read
         self.content = None
+
+    def __eq__(self, other):
+        return self.message_id == other.message_id
 
 
 def _only_element(values):

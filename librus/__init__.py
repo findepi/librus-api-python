@@ -182,11 +182,11 @@ class LibrusSession(object):
             cells = row.find('td')
             href = cells[3].find('a')[0].attrs['href']
             message = Message(
-                message_id=href.strip()[-9:-3],
+                message_id=href.strip()[-10:-3],  # https://synergia.librus.pl/wiadomosci/1/1/0000000/f0, id = 0000000
                 sender=cells[2].text,
                 subject=cells[3].text,
                 sent_at=datetime.datetime.strptime(cells[4].text, '%Y-%m-%d %H:%M:%S'),
-                is_read=('font-weight: bold' in cells[3].attrs.get('style', ''))
+                is_read=('font-weight: bold' not in cells[3].attrs.get('style', ''))
             )
             if get_content:
                 url = 'https://synergia.librus.pl' + href

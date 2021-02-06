@@ -18,6 +18,7 @@ setup(
         # 'pytest==3.3.1',
     ],
     zip_safe=True,  # just to silence setuptools
+    python_requires='>=3',
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",

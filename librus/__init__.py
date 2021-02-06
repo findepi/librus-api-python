@@ -182,7 +182,7 @@ class LibrusSession(object):
             cells = row.find('td')
             href = cells[3].find('a')[0].attrs['href']
             message = Message(
-                message_id=href.strip()[-10:-3],  # https://synergia.librus.pl/wiadomosci/1/1/0000000/f0, id = 0000000
+                message_id=href.strip(),
                 sender=cells[2].text,
                 subject=cells[3].text,
                 sent_at=datetime.datetime.strptime(cells[4].text, '%Y-%m-%d %H:%M:%S'),

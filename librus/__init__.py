@@ -39,11 +39,11 @@ class LibrusSession(object):
         # TODO we should be iterating explicitly over links to calendar items' details; doing unstructured "grepping" for now
         for element in response.html.search_all("szczegoly/{}'"):
             details = self._html_session.get(url=f"https://synergia.librus.pl/terminarz/szczegoly/{element[0]}")
-            yield self._parse_exam(details.html.find('table.decorated.small'))
+            yield self._parse_exam(details.html.find('table.decorated.medium'))
 
     @staticmethod
     def _parse_exam(element):
-        date = lesson = teacher = category = subject = classroom = specification = publish_date = interval = None
+        date = lesson = teacher = category = subject = classroom = specification = publish_date = interval = online_lesson_link = None
         for data_row in element[0].find("tbody tr"):
             description = _only_element(data_row.find('th')).full_text.strip()
             text = _sanitize_text(_only_element(data_row.find('td')).full_text.strip())
@@ -85,8 +85,12 @@ class LibrusSession(object):
             else:
                 print(f"{repr(description)} is unrecognized")
 
+        # for online lessons it additionally saves a link to zoom meeting
+        if "lekcja online" in category and len(element[0].absolute_links) == 1:
+            online_lesson_link = list(element[0].absolute_links)[0]
+
         return Exam(date, lesson, teacher, category, subject,
-                    classroom, specification, publish_date, interval)
+                    classroom, specification, publish_date, interval, online_lesson_link)
 
     @staticmethod
     def _parse_announcement(element):
@@ -206,7 +210,7 @@ class Announcement(object):
 
 class Exam(object):
     def __init__(self, date, lesson, teacher, category, subject,
-                 classroom, specification, publish_date, interval):
+                 classroom, specification, publish_date, interval, online_lesson_link=None):
         self.date = date
         self.lesson = lesson
         self.teacher = teacher
@@ -216,6 +220,7 @@ class Exam(object):
         self.specification = specification
         self.publish_date = publish_date
         self.interval = interval
+        self.online_lesson_link = online_lesson_link
 
 
 class Grade(object):
@@ -274,3 +279,4 @@ def _sanitize_text(text):
     text = text.replace('&nbsp', ' ')
     text = text.strip()
     return text
+

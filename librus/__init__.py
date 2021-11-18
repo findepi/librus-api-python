@@ -41,6 +41,15 @@ class LibrusSession(object):
             details = self._html_session.get(url=f"https://synergia.librus.pl/terminarz/szczegoly/{element[0]}")
             yield self._parse_exam(details.html.find('table.decorated.medium'))
 
+    def list_absences(self):
+        """
+        Get Absences (AKA 'nieobecnosci')
+        """
+        response = self._html_session.get(url='https://synergia.librus.pl/przegladaj_nb/uczen')
+        for element in response.html.search_all("szczegoly/{}'"):
+            details = self._html_session.get(url=f"https://synergia.librus.pl/przegladaj_nb/szczegoly/{element[0]}")
+            yield self._parse_absence(details.html.find('table.decorated.medium'))
+
     @staticmethod
     def _parse_exam(element):
         date = lesson = teacher = category = subject = classroom = specification = publish_date = interval = online_lesson_link = None
@@ -199,6 +208,47 @@ class LibrusSession(object):
 
             yield message
 
+    @staticmethod
+    def _parse_absence(element):
+        category = date = subject = topic = lesson = teacher = school_trip = added_by = None
+        for data_row in element[0].find('tbody tr'):
+            if not data_row.find('th'):
+                continue
+            description = _only_element(data_row.find('th')).full_text.strip()
+            text = _sanitize_text(_only_element(data_row.find('td')).full_text.strip())
+            if description == "Data":
+                assert date is None, "date already set"
+                date = text
+
+            elif description == "Godzina lekcyjna":
+                assert lesson is None, "lesson already set"
+                lesson = text
+
+            elif description == "Nauczyciel":
+                assert teacher is None, "teacher already set"
+                teacher = text
+
+            elif description == "Rodzaj":
+                assert category is None, "category already set"
+                category = text
+
+            elif description == "Przedmiot":
+                assert subject is None, "subject already set"
+                subject = text
+            elif description == "Temat zajęć":
+                assert topic is None, "topic already set"
+                topic = text
+            elif description == "Czy wycieczka":
+                assert school_trip is None, "school_trip already set"
+                school_trip = text
+            elif description == "Dodał":
+                assert added_by is None, "added_by already set"
+                added_by = text
+            else:
+                print(f"{repr(description)} is unrecognized")
+
+        return Absence(date, lesson, teacher, category, subject, topic, school_trip, added_by)
+
 
 class Announcement(object):
     def __init__(self, title, content, author, date):
@@ -266,6 +316,18 @@ class Message(object):
         self.sent_at = sent_at
         self.is_read = is_read
         self.content = None
+
+
+class Absence(object):  # nieobecność
+    def __init__(self, date, lesson, teacher, category, subject, topic, school_trip, added_by):
+        self.date = date
+        self.lesson = lesson
+        self.teacher = teacher
+        self.category = category
+        self.subject = subject
+        self.topic = topic
+        self.school_trip = school_trip
+        self.added_by = added_by
 
 
 def _only_element(values):

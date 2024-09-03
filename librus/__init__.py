@@ -193,20 +193,22 @@ class LibrusSession(object):
 
         for row in response.html.find('.stretch > tbody > tr'):
             cells = row.find('td')
-            href = cells[3].find('a')[0].attrs['href']
-            message = Message(
-                message_id=href.strip(),
-                sender=cells[2].text,
-                subject=cells[3].text,
-                sent_at=datetime.datetime.strptime(cells[4].text, '%Y-%m-%d %H:%M:%S'),
-                is_read=('font-weight: bold' not in cells[3].attrs.get('style', ''))
-            )
-            if get_content:
-                url = 'https://synergia.librus.pl' + href
-                content = self._html_session.get(url=url).html.find('.container-message-content')[0]
-                message.content = content.text
+            messages_available = len(cells) >= 4
+            if messages_available:
+                href = cells[3].find('a')[0].attrs['href']
+                message = Message(
+                    message_id=href.strip(),
+                    sender=cells[2].text,
+                    subject=cells[3].text,
+                    sent_at=datetime.datetime.strptime(cells[4].text, '%Y-%m-%d %H:%M:%S'),
+                    is_read=('font-weight: bold' not in cells[3].attrs.get('style', ''))
+                )
+                if get_content:
+                    url = 'https://synergia.librus.pl' + href
+                    content = self._html_session.get(url=url).html.find('.container-message-content')[0]
+                    message.content = content.text
 
-            yield message
+                yield message
 
     @staticmethod
     def _parse_absence(element):

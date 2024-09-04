@@ -2,6 +2,6 @@
 release:
 	rm -rf dist/
 	. .venv/bin/activate && \
-	    pip install twine wheel && \
+	    pip install setuptools twine wheel && \
 	    ./setup.py sdist bdist_wheel && \
 	    twine upload dist/*
